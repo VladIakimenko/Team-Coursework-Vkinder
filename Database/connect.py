@@ -1,7 +1,7 @@
 import sqlalchemy as sq
 from sqlalchemy.orm import sessionmaker
 
-from Database.models import create_table
+from models import create_table
 
 SQLsystem = 'postgresql'
 login = 'postgres'
