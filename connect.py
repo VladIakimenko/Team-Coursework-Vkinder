@@ -8,7 +8,7 @@ login = 'postgres'
 password = ''
 host = 'localhost'
 port = '5432'
-db_name = "vkinder_db"
+db_name = ""
 DSN = f'{SQLsystem}://{login}:{password}@{host}:{port}/{db_name}'
 engine = sq.create_engine(DSN)
 Session = sessionmaker(bind=engine)
