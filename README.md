@@ -1,4 +1,5 @@
+
 This is the 'main' branch.  
 
-It is used for clear functioning releases only!
-Only merge requests from the 'development' branch are excepted to the 'main' branch!
+
+Should be updated via merge requests from another branch (name should correspond to the task).
