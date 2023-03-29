@@ -5,10 +5,10 @@ from models import create_table, User, Offer, UserOffer, delete_table, Photo, In
 
 SQLsystem = 'postgresql'
 login = 'postgres'
-password = '35Pc5zTH47A7'
+password = ''
 host = 'localhost'
 port = '5432'
-db_name = "vkinder_db"
+db_name = ""
 DSN = f'{SQLsystem}://{login}:{password}@{host}:{port}/{db_name}'
 engine = sq.create_engine(DSN)
 Session = sessionmaker(bind=engine)
