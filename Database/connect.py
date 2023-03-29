@@ -1,6 +1,7 @@
 import sqlalchemy as sq
 from sqlalchemy.orm import sessionmaker
 
+
 from models import create_table, User, Offer, UserOffer, delete_table, Photo, Interest, InterestUserOffer
 
 SQLsystem = 'postgresql'
@@ -12,6 +13,7 @@ db_name = ""
 DSN = f'{SQLsystem}://{login}:{password}@{host}:{port}/{db_name}'
 engine = sq.create_engine(DSN)
 Session = sessionmaker(bind=engine)
+
 delete_table(engine)
 create_table(engine)
 
