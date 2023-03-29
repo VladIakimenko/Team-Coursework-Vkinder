@@ -18,7 +18,7 @@ class Bot:
         self.server = None
         self.ts = None
         self.params = {'group_id': os.environ.get("GROUP_ID"),
-                       'access_token': os.environ.get("SECRET"),
+                       'access_token': os.environ.get("GROUP_TOKEN"),
                        'v': '5.131'}
 
     def get_server(self):
@@ -26,7 +26,7 @@ class Bot:
         Getting session data (required when first addressing to long poll)
         :return: "session data successfully received" OR error message
         """
-        method = 'groups.getLongPollServer/'
+        method = 'groups.getLongPollServer'
         response = requests.get(self.base + method, params=self.params)
         try:
             self.key = response.json()['response']['key']
@@ -86,23 +86,31 @@ class Bot:
         else:
             return response.json().get('error', {}).get('error_msg', 'unknown error')
 
+    def get_users_details(self, user):
+        method = 'users.get'
+        data = {'user_ids': f"{user}", 'fields': 'city, sex, bdate, interests'}
+        params = {**self.params, **data}
+        response = requests.get(self.base + method, params=params)
+        return response.json()['response'][0]
 
-if __name__ == '__main__':
-    bot = Bot()
-    print(bot.get_server())
-    while True:
-        event = bot.listen()
-        if event:
-            user, text = event
-            print(f'Incoming message from user {user}:\n'
-                  f'"{text}"')
-            reply = "Hi, thanks for your interest! I am a dating bot, a Love Machine in some way...\n" \
-                    "Unfortunately, for now I can only service you myself, " \
-                    "but in future I'll be able to offer some nice dating suggestions out of VK users."
-            print(bot.say(user, reply))
 
-    # long_poll.get_settings()
-    # print(long_poll.set_settings())
+class Searcher(Bot):
+    def __init__(self):
+        if os.path.exists(self.dotenv_path):
+            load_dotenv(self.dotenv_path)
+        self.params = {'access_token': os.environ.get("USER_TOKEN"),
+                       'v': '5.131'}
+
+    def search_users(self, criteria):
+        method = 'users.search'
+        params = {**self.params, **{'count': 1000}}
+        for key, value in criteria.items():
+            if key != 'interests':
+                params = {**params, **{key: value}}
+        response = requests.get(self.base + method, params=params)
+        return response.json()
+
+
 
 
 
