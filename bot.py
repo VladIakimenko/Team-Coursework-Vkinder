@@ -1,6 +1,7 @@
 import os
 import json
 import random
+import vk_api
 
 import requests
 from dotenv import load_dotenv
@@ -95,21 +96,24 @@ class Bot:
 
 
 class Searcher(Bot):
+    scripts_path = 'vk_scripts/'
+
     def __init__(self):
         if os.path.exists(self.dotenv_path):
             load_dotenv(self.dotenv_path)
-        self.params = {'access_token': os.environ.get("USER_TOKEN"),
-                       'v': '5.131'}
+
+        access_token = os.environ.get("USER_TOKEN")
+        vk_session = vk_api.VkApi(token=access_token)
+        self.vk = vk_session.get_api()
 
     def search_users(self, criteria):
-        method = 'users.search'
-        params = {**self.params, **{'count': 1000}}
-        for key, value in criteria.items():
-            if key != 'interests':
-                params = {**params, **{key: value}}
-        response = requests.get(self.base + method, params=params)
-        return response.json()
-
+        with open(self.scripts_path + 'users.search') as f:
+            code = f.read().replace('<city>', str(criteria['city']))\
+                           .replace('<sex>', str(criteria['sex']))\
+                           .replace('<age_from>', str(criteria['age_from']))\
+                           .replace('<age_to>', str(criteria['age_to']))
+        response = self.vk.execute(code=code)
+        return response[0]['items'] if response else response
 
 
 

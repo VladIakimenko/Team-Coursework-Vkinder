@@ -1,7 +1,11 @@
 from datetime import datetime
 import string
 
+import pymorphy2
+
 from bot import Bot, Searcher
+
+morph = pymorphy2.MorphAnalyzer()
 
 
 def form_criteria(user):
@@ -31,14 +35,41 @@ def form_criteria(user):
         else:
             criteria['age_from'] = min_age
 
-    def sort_interests(raw):
-        stripper = str.maketrans({char: '' for char in string.punctuation})
-        return sorted([interest.translate(stripper).lower() for interest in raw.split()])
-
     if user.get('interests'):
         criteria['interests'] = sort_interests(user['interests'])
 
     return criteria
+
+
+def sort_interests(raw):
+    stop_list = ['ходить', 'смотреть', 'играть', 'делать', 'заниматься', 'слушать']
+    stripper = str.maketrans({char: '' for char in string.punctuation})
+    interests = [interest.translate(stripper).lower() for interest in raw.split()
+                 if len(interest) >= 4]
+    interests = filter(lambda word: morph.parse(word) and 'NOUN' in morph.parse(word)[0].tag
+                                    or 'INFN' in morph.parse(word)[0].tag and word not in stop_list,
+                       interests)
+    return sorted(interests)
+
+
+def filter_by_interests(criteria, candidates):
+    perfect_matches = {}
+    for candidate in candidates:
+        if candidate.get('interests'):
+            counter = 0
+            for target in criteria['interests']:
+                for interest in sort_interests(candidate['interests']):
+                    if target == interest:
+                        counter += 1
+            if counter > 0:
+                perfect_matches[counter] = candidate
+
+    for candidate in perfect_matches.values():
+        if candidate in candidates:
+            candidates.remove(candidate)
+
+    return [perfect_matches[count] for count in sorted(perfect_matches.keys(), reverse=True)] + \
+           [candidate for candidate in candidates if candidate not in perfect_matches.values()]
 
 
 if __name__ == '__main__':
@@ -59,8 +90,20 @@ if __name__ == '__main__':
             search_params = form_criteria(details)
             print(search_params)
 
-            result = searcher.search_users(search_params)
-            print(result)
+            all_ = searcher.search_users(search_params)
+            print(f'\ntotal found: {len(all_)}')
+
+            filtered_by_interests = filter_by_interests(search_params, all_)
+            print(f' total filtered: {len(filtered_by_interests)}')
+
+            for person in filtered_by_interests:
+                print(f"{person['first_name']} {person['last_name']}")
+                print(f"пол: {('ОШИБКА', 'женский')[person['sex'] == 1]}")
+                print(f"Город: {person.get('city', '')}")
+                print(f"дата рождения: {person.get('bdate', '')}")
+                print(f"интересы: {person.get('interests', '')}")
+                print(f"как их видит прога: {sort_interests(person['interests']) if person.get('interests') else ''}")
+                print()
 
             # reply = ""
             # print(bot.say(user_id, reply))

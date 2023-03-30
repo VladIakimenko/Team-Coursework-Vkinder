@@ -1,0 +1,16 @@
+var count = 1000;
+var result = [];
+
+var users = API.users.search({
+    count: count,
+    sort: 1,
+    city: <city>,
+    sex: <sex>,
+    age_from: <age_from>,
+    age_to: <age_to>,
+    fields: "first_name,last_name,city,sex,bdate,interests"
+});
+  
+result.push(users);
+return result;
+
