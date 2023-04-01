@@ -1,5 +1,6 @@
 from datetime import datetime
 import string
+import time
 
 import pymorphy2
 
@@ -72,6 +73,24 @@ def filter_by_interests(criteria, candidates):
            [candidate for candidate in candidates if candidate not in perfect_matches.values()]
 
 
+def browse_for_photos(accounts, start_from):
+    index = start_from
+    while True:
+        albums = searcher.get_albums(accounts[index]['id'])
+        time.sleep(0.35)
+        index += 1
+        print(f'\rПретендент номер:{index}\t\t'
+              f'Кол-во альбомов:{len(albums) if albums != False else albums}', end='')
+        photos = searcher.get_photos(accounts[index]['id'], albums)
+        if len(photos) >= 3:
+            return (accounts[index]['id'],
+                    sorted(photos, key=lambda x: x[1], reverse=True),
+                    index)
+
+        if index == len(accounts) - 1:
+            return False
+
+
 if __name__ == '__main__':
     bot = Bot()
     searcher = Searcher()
@@ -99,11 +118,28 @@ if __name__ == '__main__':
             for person in filtered_by_interests:
                 print(f"{person['first_name']} {person['last_name']}")
                 print(f"пол: {('ОШИБКА', 'женский')[person['sex'] == 1]}")
-                print(f"Город: {person.get('city', '')}")
+                print(f"город: {person.get('city', '')}")
                 print(f"дата рождения: {person.get('bdate', '')}")
                 print(f"интересы: {person.get('interests', '')}")
                 print(f"как их видит прога: {sort_interests(person['interests']) if person.get('interests') else ''}")
                 print()
+
+            stopped_at = 0
+            while True:
+                result = browse_for_photos(filtered_by_interests, stopped_at)
+                if result:
+                    user_id, photos, stopped_at = result
+                    print('\n')
+                    print(f'ID пользователя: {user_id}')
+                    print(f'Фото: {photos}')
+                    input('"Enter" для продолжения')
+                else:
+                    break
+
+
+
+
+
 
             # reply = ""
             # print(bot.say(user_id, reply))

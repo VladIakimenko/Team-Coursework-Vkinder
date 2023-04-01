@@ -1,8 +1,8 @@
 import os
 import json
 import random
-import vk_api
 
+import vk_api
 import requests
 from dotenv import load_dotenv
 
@@ -114,6 +114,29 @@ class Searcher(Bot):
                            .replace('<age_to>', str(criteria['age_to']))
         response = self.vk.execute(code=code)
         return response[0]['items'] if response else response
+
+    def get_albums(self, user_id):
+        try:
+            response = self.vk.photos.getAlbums(owner_id=user_id, need_system=1)
+            return [album['id'] for album in response['items']]
+        except vk_api.exceptions.ApiError:
+            return []
+
+    def get_photos(self, user_id, albums):
+        result = []
+        for album in albums:
+            try:
+                response = self.vk.photos.get(owner_id=user_id, extended=1, photo_sizes=1, album_id=album)
+                photo = {photo['sizes'][-1]['url']: photo['likes']['count'] for photo in response['items']}
+                result.extend(photo.items())
+            except vk_api.exceptions.ApiError as e:
+                if not str(e).startswith("[30] This profile is private") \
+                        and not str(e).startswith("[200] Access denied"):
+                    raise e
+        return result
+
+
+
 
 
 
