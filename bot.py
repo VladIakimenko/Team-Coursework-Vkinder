@@ -3,6 +3,7 @@ import json
 import random
 
 import vk_api
+from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 import requests
 from dotenv import load_dotenv
 
@@ -10,6 +11,7 @@ from dotenv import load_dotenv
 class Bot:
     dotenv_path = '.env'
     settings_path = 'settings.cfg'
+    keyboard_path = 'keyboard.json'
     base = 'https://api.vk.com/method/'
 
     def __init__(self):
@@ -21,6 +23,8 @@ class Bot:
         self.params = {'group_id': os.environ.get("GROUP_ID"),
                        'access_token': os.environ.get("GROUP_TOKEN"),
                        'v': '5.131'}
+        vk_session = vk_api.VkApi(token=os.environ.get("GROUP_TOKEN"))
+        self.vk = vk_session.get_api()
 
     def get_server(self):
         """
@@ -76,16 +80,22 @@ class Bot:
         else:
             return None
 
-    def say(self, recipient, message):
-        randint = random.randint(-2147483648, 2147483647)
-        method = 'messages.send'
-        data = {'user_id': {recipient}, 'message': {message}, 'random_id': randint}
-        params = {**self.params, **data}
-        response = requests.get(self.base + method, params=params)
-        if response.json().get('response'):
-            return 'message successfully sent'
-        else:
-            return response.json().get('error', {}).get('error_msg', 'unknown error')
+    def suggest(self, recipient, name, link, photos):
+        message = f'Я нашел для тебя отличный вариант для знакомства!\n\n' \
+                  f'{name}\n' \
+                  f'{link}\n\n'
+        attachment = ','.join(photos)
+        random_id = random.randint(-2147483648, 2147483647)
+        # with open(self.keyboard_path, 'rt', encoding='UTF-8') as filehandle:
+        #     keyboard = json.load(fp=filehandle)
+        keyboard = VkKeyboard(one_time=False)
+        keyboard.add_button('предложить еще', color=VkKeyboardColor.PRIMARY)
+
+        self.vk.messages.send(user_id=recipient,
+                              message=message,
+                              attachment=attachment,
+                              random_id=random_id,
+                              keyboard=keyboard.get_keyboard())
 
     def get_users_details(self, user):
         method = 'users.get'
