@@ -1,15 +1,14 @@
 import sqlalchemy as sq
 from sqlalchemy.orm import sessionmaker
 
-
-from models import create_table, User, Offer, UserOffer, delete_table, Photo, Interest, InterestUserOffer
+from models import delete_table, create_table, User, UserOffer, Photo, Interest, InterestUserOffer, Offer
 
 SQLsystem = 'postgresql'
 login = 'postgres'
-password = ''
+password = '35Pc5zTH47A7'
 host = 'localhost'
 port = '5432'
-db_name = ""
+db_name = "vkinder_db"
 DSN = f'{SQLsystem}://{login}:{password}@{host}:{port}/{db_name}'
 engine = sq.create_engine(DSN)
 Session = sessionmaker(bind=engine)
@@ -18,7 +17,7 @@ delete_table(engine)
 create_table(engine)
 
 
-def add_user(user_id: int, first_name: str, last_name: str, sex: int, age: int, city: str):
+def add_user(user_id: int, first_name: str, last_name: str, sex: int, age: str, city: int):
     """
         Function adds a user to the database.
     :param user_id: id user
@@ -36,7 +35,7 @@ def add_user(user_id: int, first_name: str, last_name: str, sex: int, age: int, 
             session.commit()
 
 
-def add_offer(user_id: int, offer_id: int, first_name: str, last_name: str, sex: int, age: int, city: str):
+def add_offer(user_id: int, offer_id: int, first_name: str, last_name: str, sex: int, age: str, city: int):
     """
         The function adds an offer to the database.
     :param user_id: id user
@@ -87,14 +86,14 @@ def add_favorite_list(user_id: str, offer_id: str):
     """
     with Session() as session:
         session.query(UserOffer). \
-            filter(UserOffer.vk_offer_id == offer_id). \
-            filter(UserOffer.vk_user_id == user_id). \
+            filter(UserOffer.offer_id == offer_id). \
+            filter(UserOffer.user_id == user_id). \
             filter(UserOffer.black_list == 0). \
             update({'favorite_list': 1})
         session.commit()
 
 
-def add_photo(offer_id: int, photo_url: list[str]):
+def add_photo(offer_id, photo_url):
     """
         Function saves links to photos of the offer in the database
     :param offer_id: id offer
@@ -102,9 +101,9 @@ def add_photo(offer_id: int, photo_url: list[str]):
     """
     with Session() as session:
         for url in photo_url:
-            photo_find = session.query(Photo).filter(Photo.id_photo == url).all()
+            photo_find = session.query(Photo).filter(Photo.photo_id == url).all()
             if len(photo_find) == 0:
-                photo = Photo(id_photo=url, offer_id=offer_id)
+                photo = Photo(photo_url=url, offer_id=offer_id)
                 session.add(photo)
             session.commit()
 
@@ -127,12 +126,12 @@ def add_interest(interest: str, user_id=0, offer_id=0):
             filter(InterestUserOffer.user_id == user_id).all()
         offer_find = session.query(InterestUserOffer.offer_id). \
             filter(InterestUserOffer.interest_id == interest_id_find). \
-            filter(InterestUserOffer.vk_offer_id == offer_id).all()
+            filter(InterestUserOffer.offer_id == offer_id).all()
         if user_id != 0 and user_id not in [user[0] for user in user_find]:
-            interest_person_add = InterestUserOffer(vk_user_id=user_id, interest_id=interest_id_find)
+            interest_person_add = InterestUserOffer(user_id=user_id, interest_id=interest_id_find)
             session.add(interest_person_add)
         if offer_id != 0 and offer_id not in [offer[0] for offer in offer_find]:
-            interest_person_add = InterestUserOffer(vk_offer_id=offer_id, interest_id=interest_id_find)
+            interest_person_add = InterestUserOffer(offer_id=offer_id, interest_id=interest_id_find)
             session.add(interest_person_add)
         session.commit()
 
@@ -232,6 +231,4 @@ def get_user():
     with Session() as session:
         return [user[0] for user in session.query(User.user_id).all()]
 
-# add_user(user_id=1, first_name='Oleg', last_name="Sun", sex=2, age=26, city='NN')
-# add_offer(user_id=1, offer_id=2, first_name="Ol", last_name='Pi', sex=1, age=22, city='NN')
-# add_offer(user_id=1, offer_id=1, first_name="Olga", last_name='Piop', sex=1, age=22, city='NN')
+
