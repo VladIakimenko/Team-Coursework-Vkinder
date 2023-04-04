@@ -8,11 +8,11 @@ class User(Base):
     __tablename__ = 'user'
 
     user_id = sq.Column(sq.Integer, primary_key=True)
-    first_name = sq.Column(sq.String(length=20), nullable=False)
-    last_name = sq.Column(sq.String(length=20), nullable=False)
+    first_name = sq.Column(sq.String(length=40), nullable=False)
+    last_name = sq.Column(sq.String(length=40), nullable=False)
     sex = sq.Column(sq.Integer, nullable=False)
-    age = sq.Column(sq.Integer, nullable=False)
-    city = sq.Column(sq.String(length=20), nullable=False)
+    age = sq.Column(sq.Date, nullable=False)
+    city = sq.Column(sq.Integer, nullable=False)
 
     user_offer = relationship('UserOffer', back_populates='user')
     interest_user_offer = relationship('InterestUserOffer', back_populates='user')
@@ -22,11 +22,11 @@ class Offer(Base):
     __tablename__ = 'offer'
 
     offer_id = sq.Column(sq.Integer, primary_key=True)
-    first_name = sq.Column(sq.String(length=20), nullable=False)
-    last_name = sq.Column(sq.String(length=20), nullable=False)
+    first_name = sq.Column(sq.String(length=40), nullable=False)
+    last_name = sq.Column(sq.String(length=40), nullable=False)
     sex = sq.Column(sq.Integer, nullable=False)
-    age = sq.Column(sq.Integer, nullable=False)
-    city = sq.Column(sq.String(length=20), nullable=False)
+    age = sq.Column(sq.Date, nullable=False)
+    city = sq.Column(sq.Integer, nullable=False)
 
     user_offer = relationship('UserOffer', back_populates='offer')
     photo = relationship('Photo', back_populates='offer')
@@ -60,8 +60,8 @@ class InterestUserOffer(Base):
     __tablename__ = 'interest_user_offer'
 
     interest_user_offer_id = sq.Column(sq.Integer, primary_key=True)
-    vk_user_id = sq.Column(sq.Integer, sq.ForeignKey('user.user_id'))
-    vk_offer_id = sq.Column(sq.Integer, sq.ForeignKey('offer.offer_id'))
+    user_id = sq.Column(sq.Integer, sq.ForeignKey('user.user_id'))
+    offer_id = sq.Column(sq.Integer, sq.ForeignKey('offer.offer_id'))
     interest_id = sq.Column(sq.Integer, sq.ForeignKey('interest.interest_id'), nullable=False)
 
     user = relationship('User', back_populates='interest_user_offer', cascade='all, delete')
@@ -73,7 +73,7 @@ class Interest(Base):
     __tablename__ = 'interest'
 
     interest_id = sq.Column(sq.Integer, primary_key=True)
-    interest = sq.Column(sq.String(length=50), nullable=False)
+    interest = sq.Column(sq.String(length=80), nullable=False)
 
     interest_user_offer = relationship('InterestUserOffer', back_populates='interest')
 

@@ -1,4 +1,5 @@
-certifi==2022.12.7
+
+﻿certifi==2022.12.7
 charset-normalizer==3.1.0
 DAWG-Python==0.7.2
 docopt==0.6.2
@@ -13,3 +14,4 @@ SQLAlchemy==2.0.7
 typing_extensions==4.5.0
 urllib3==1.26.15
 vk-api==11.9.9
+

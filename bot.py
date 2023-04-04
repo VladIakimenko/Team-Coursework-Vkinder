@@ -118,10 +118,10 @@ class Searcher(Bot):
 
     def search_users(self, criteria):
         with open(self.scripts_path + 'users.search') as f:
-            code = f.read().replace('<city>', str(criteria['city']))\
-                           .replace('<sex>', str(criteria['sex']))\
-                           .replace('<age_from>', str(criteria['age_from']))\
-                           .replace('<age_to>', str(criteria['age_to']))
+            code = f.read().replace('<city>', str(criteria['city'])) \
+                .replace('<sex>', str(criteria['sex'])) \
+                .replace('<age_from>', str(criteria['age_from'])) \
+                .replace('<age_to>', str(criteria['age_to']))
         response = self.vk.execute(code=code)
         return response[0]['items'] if response else response
 
@@ -144,11 +144,6 @@ class Searcher(Bot):
                         and not str(e).startswith("[200] Access denied"):
                     raise e
         return result
-
-
-
-
-
 
 
 
