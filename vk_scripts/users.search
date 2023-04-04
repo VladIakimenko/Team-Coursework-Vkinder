@@ -8,6 +8,7 @@ var users = API.users.search({
     sex: <sex>,
     age_from: <age_from>,
     age_to: <age_to>,
+    has_photo: 1,
     fields: "first_name,last_name,city,sex,bdate,interests"
 });
   
