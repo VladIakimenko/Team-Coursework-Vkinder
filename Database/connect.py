@@ -8,10 +8,10 @@ from Database.models import delete_table, create_table, User, UserOffer, Photo, 
 
 SQLsystem = 'postgresql'
 login = 'postgres'
-password = 'kay32463AC63jk6'
+password = ''
 host = 'localhost'
 port = '5432'
-db_name = "vkinder"
+db_name = ""
 DSN = f'{SQLsystem}://{login}:{password}@{host}:{port}/{db_name}'
 engine = sq.create_engine(DSN)
 Session = sessionmaker(bind=engine)
