@@ -1,10 +1,13 @@
-from datetime import datetime
 import string
+from datetime import datetime
+import threading
+import queue
 import time
 
 import pymorphy2
 
 from bot import Bot, Searcher
+from Database import connect
 
 morph = pymorphy2.MorphAnalyzer()
 
@@ -18,7 +21,8 @@ def form_criteria(user):
     if user.get('sex'):
         criteria['sex'] = (1, 2)[user['sex'] == 1]
     else:
-        raise Exception("ERROR: Cannot form search criteria if user's sex is not determined in profile!")
+         # SEND A MESSAGE THAT WE CAN"T HELP IF YOU HAVE NO SEX
+        return
 
     def age_from_bdate(bdate):
         try:
@@ -41,7 +45,6 @@ def form_criteria(user):
         criteria['interests'] = sort_interests(user['interests'])
     else:
         criteria['interests'] = []
-
     return criteria
 
 
@@ -76,79 +79,163 @@ def filter_by_interests(criteria, candidates):
            [candidate for candidate in candidates if candidate not in perfect_matches.values()]
 
 
-def choose_suggestion(accounts, start_from):
-    index = start_from
-    while True:
-        albums = searcher.get_albums(accounts[index]['id'])
-        time.sleep(0.35)
-        index += 1
-        print(f'\rПретендент номер:{index}\t\t'
-              f'Кол-во альбомов:{len(albums) if albums != False else albums}', end='')
-        photos = searcher.get_photos(accounts[index]['id'], albums)
-        if len(photos) >= 3:
-            name = f"{accounts[index]['first_name']} {accounts[index]['last_name']}"
-            link = f"https://vk.com/id{accounts[index]['id']}"
-            photos = sorted(photos, key=lambda x: x[1], reverse=True)[:3]
-            return (name,
-                    link,
-                    [photo[0] for photo in photos],
-                    index)
-
-        if index == len(accounts) - 1:
-            return False
-
-
-def suggest(stopped_at, accounts):
-    details = choose_suggestion(accounts, stopped_at)
-    if details:
-        name, link, photos, stopped_at = details
-        bot.suggest(sender_id, name, link, photos)
-    return stopped_at
+def send_suggestion(account, sender_id):
+    name = f"{account['first_name']} {account['last_name']}"
+    link = f"https://vk.com/id{account['id']}"
+    photos = account['photos']
+    bot.suggest(sender_id, name, link, photos)
 
 
 if __name__ == '__main__':
     bot = Bot()
     searcher = Searcher()
-    next_offer = 0
     accounts = []
+    dialogues = {}
+    # connect.clear_population()                      # MAKE SURE TO REMOVE THIS LINE WHEN PUSHING TO PROD
 
     print(bot.get_server())
-    while True:
-        event = bot.listen()
-        if event:
-            sender_id, text = event
 
-            if text == 'предложить еще' and accounts:
-                next_offer = suggest(next_offer, accounts)
-                print()
-                print(f'Предложение № {next_offer - 1} отправлено')
+    def listen_thread_func():
 
-            else:
-                print(f'Получено сообщение от пользователя {sender_id}:\n'
-                      f'Содержание сообщения:\n"{text}"')
-                details = bot.get_users_details(sender_id)
-                print(f'Получены данные пользователя:\n{details}')
-                search_params = form_criteria(details)
-                print(f'Сформированы параметры поиска:\n{search_params}')
-                all_ = searcher.search_users(search_params)
-                print(f'\nВсего найдено {len(all_)} аккаунтов')
-                filtered_by_interests = filter_by_interests(search_params, all_)
+        while True:
+            event = bot.listen()
+            if event:
+                if event[0] not in dialogues:
+                    dialogues[event[0]] = threading.Event()
+                event_thread = threading.Thread(target=handle_event, args=(event,))
+                event_thread.start()
+
+    def handle_event(event):
+        sender_id, text = event
+        offers_queue = queue.Queue()
+
+        if text == 'предложить еще':
+            print(f'Получен запрос на след. предложение от {sender_id}')
+            dialogues[sender_id].set()
+            print(f'Маяк установлен!')
+        else:
+            print(f'Получено сообщение от пользователя {sender_id}:\n'
+                  f'Содержание сообщения:\n"{text}"')
+
+            details = bot.get_users_details(sender_id)
+            print(f'Получены данные пользователя:\n{details}')
+
+            print(f'Добавляем данные о пользователе {sender_id} в БД (если отсутсвует)')
+            connect.add_user(details['id'],
+                             details['first_name'],
+                             details['last_name'],
+                             details['sex'],
+                             details.get('bdate'),
+                             details.get('city', {}).get('id', ''),
+                             details.get('interests'))
+
+            search_params = form_criteria(details)
+            print(f'Сформированы параметры поиска:\n{search_params}')
+
+            print('Получаем подходящие аккаунты из БД...')
+            offers_from_db = connect.get_offers(search_params)
+
+            if offers_from_db and len(offers_from_db) >= 10:
+                print(f'Получено {len(offers_from_db)} аккаунтов.')
+                filtered = filter_by_interests(search_params, offers_from_db)
                 print(f'Произведена фильтрация по интересам.\n'
                       f'Аккаунты с подходящими интересами перемещены во главу списка.')
+                for account in filtered:
+                    offers_queue.put(account)
+                suggest_thread = threading.Thread(target=suggest, args=(offers_queue, sender_id))
+                suggest_thread.start()
+            else:
+                print(f'Подходящих аккаунтов в БД не обнаружено.')
+                request_api_thread = threading.Thread(target=get_accounts_from_api, args=(search_params, sender_id, offers_queue))
+                request_api_thread.start()
 
-                accounts = filtered_by_interests
-                next_offer = suggest(next_offer, accounts)
-                print()
-                print(f'Предложение № {next_offer - 1} отправлено')
+    def get_accounts_from_api(search_params, sender_id, offers_queue):
+        def add_to_db(accounts):
+            counter = 0
 
-                # for person in filtered_by_interests:
-                #     print(f"{person['first_name']} {person['last_name']}")
-                #     print(f"пол: {('ОШИБКА', 'женский')[person['sex'] == 1]}")
-                #     print(f"город: {person.get('city', '')}")
-                #     print(f"дата рождения: {person.get('bdate', '')}")
-                #     print(f"интересы: {person.get('interests', '')}")
-                #     print(f"как их видит прога: {sort_interests(person['interests']) if person.get('interests') else ''}")
-                #     print()
+            for i, account in enumerate(accounts):
+                progress = f'{round(((i + 1) * 100) / len(accounts), 2)} %'
+                print('\r' + progress, end='')
+
+                offer_id = account['id']
+                raw = searcher.get_photos_and_details(offer_id, )
+
+                if not raw:
+                    continue
+                else:
+                    raw = sum(raw, [])
+
+                photos = {photo['sizes'][-1]['url']: photo['likes']['count'] for photo in raw}
+                photos = [pair[0] for pair in sorted(photos.items(), key=lambda x: x[1])][:3]
+                if len(photos) < 3:
+                    continue
+
+                first_name = f"{account['first_name']}"
+                last_name = f"{account['last_name']}"
+
+                if not all([account.get('bdate'), account.get('city'), account.get('sex')]):
+                    continue
+                else:
+                    bdate = account['bdate']
+                    city = account['city']
+                    sex = account['sex']
+
+                try:
+                    bdate = datetime.strptime(bdate, '%d.%m.%Y').date()
+                except ValueError:
+                    continue
+
+                interests = account.get('interests', '')
+
+                connect.add_offer(sender_id, offer_id, first_name, last_name, sex, bdate, city['id'], interests)
+                connect.add_photo(offer_id, photos)
+                counter += 1
+                offers_queue.put({'id': offer_id,
+                                  'first_name': first_name,
+                                  'last_name': last_name,
+                                  'sex': sex,
+                                  'bdate': bdate,
+                                  'city': city,
+                                  'interests': interests,
+                                  'photos': photos})
+
+            return counter
+
+        api_search_result = searcher.search_users(search_params)
+        print(f'\nВсего найдено {len(api_search_result)} аккаунтов')
+        print(f'Получаем данные для сохранения в БД...')
+        suggest_thread = threading.Thread(target=suggest,
+                                          args=(offers_queue, sender_id))
+        suggest_thread.start()
+        count = add_to_db(api_search_result)
+        print('\n')
+        print(f'В базу внесено: {count} аккаунтов')
+
+    def suggest(offers_queue, user_id):
+        while True:
+            if offers_queue.qsize() >= 10:
+                break
+            time.sleep(1)
+
+        print(f'\n\n{offers_queue.qsize()} аккаунтов уже подготовлены к предложению.\n'
+              f'Начинаю предлагать!')
+
+        send_suggestion(offers_queue.get(), user_id)
+        print(f'\nПредложение отправлено пользователю {user_id}')
+
+        while offers_queue.qsize() > 0:
+            if dialogues[user_id].wait(timeout=600):
+                print('Маяк получен!')
+                dialogues[user_id].clear()
+                send_suggestion(offers_queue.get(), user_id)
+                print(f'\nПредложение отправлено пользователю {user_id}')
+                continue
+            del(dialogues[user_id])
+            print(f'\nДиалог с пользователем {user_id} завершён.')
+            break
+
+    listen_thread = threading.Thread(target=listen_thread_func)
+    listen_thread.start()
 
 
 

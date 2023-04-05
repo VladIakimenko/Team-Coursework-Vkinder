@@ -86,9 +86,7 @@ class Bot:
                   f'{link}\n\n'
         attachment = ','.join(photos)
         random_id = random.randint(-2147483648, 2147483647)
-        # with open(self.keyboard_path, 'rt', encoding='UTF-8') as filehandle:
-        #     keyboard = json.load(fp=filehandle)
-        keyboard = VkKeyboard(one_time=False)
+        keyboard = VkKeyboard(one_time=True)
         keyboard.add_button('предложить еще', color=VkKeyboardColor.PRIMARY)
 
         self.vk.messages.send(user_id=recipient,
@@ -116,34 +114,45 @@ class Searcher(Bot):
         vk_session = vk_api.VkApi(token=access_token)
         self.vk = vk_session.get_api()
 
+    def get_photos_and_details(self, account):
+        with open(self.scripts_path + 'get_photos_and_details') as f:
+            code = f.read().replace('<id>', str(account))
+        response = self.vk.execute(code=code)
+        return response
+
     def search_users(self, criteria):
         with open(self.scripts_path + 'users.search') as f:
-            code = f.read().replace('<city>', str(criteria['city'])) \
-                .replace('<sex>', str(criteria['sex'])) \
-                .replace('<age_from>', str(criteria['age_from'])) \
-                .replace('<age_to>', str(criteria['age_to']))
+            code = f.read().replace('<city>', str(criteria['city']))\
+                           .replace('<sex>', str(criteria['sex']))\
+                           .replace('<age_from>', str(criteria['age_from']))\
+                           .replace('<age_to>', str(criteria['age_to']))
         response = self.vk.execute(code=code)
         return response[0]['items'] if response else response
+    #
+    # def get_albums(self, user_id):
+    #     try:
+    #         response = self.vk.photos.getAlbums(owner_id=user_id, need_system=1)
+    #         return [album['id'] for album in response['items']]
+    #     except vk_api.exceptions.ApiError:
+    #         return []
+    #
+    # def get_photos(self, user_id, albums):
+    #     result = []
+    #     for album in albums:
+    #         try:
+    #             response = self.vk.photos.get(owner_id=user_id, extended=1, photo_sizes=1, album_id=album)
+    #             photo = {photo['sizes'][-1]['url']: photo['likes']['count'] for photo in response['items']}
+    #             result.extend(photo.items())
+    #         except vk_api.exceptions.ApiError as e:
+    #             if not str(e).startswith("[30] This profile is private") \
+    #                     and not str(e).startswith("[200] Access denied"):
+    #                 raise e
+    #     return result
 
-    def get_albums(self, user_id):
-        try:
-            response = self.vk.photos.getAlbums(owner_id=user_id, need_system=1)
-            return [album['id'] for album in response['items']]
-        except vk_api.exceptions.ApiError:
-            return []
 
-    def get_photos(self, user_id, albums):
-        result = []
-        for album in albums:
-            try:
-                response = self.vk.photos.get(owner_id=user_id, extended=1, photo_sizes=1, album_id=album)
-                photo = {photo['sizes'][-1]['url']: photo['likes']['count'] for photo in response['items']}
-                result.extend(photo.items())
-            except vk_api.exceptions.ApiError as e:
-                if not str(e).startswith("[30] This profile is private") \
-                        and not str(e).startswith("[200] Access denied"):
-                    raise e
-        return result
+
+
+
 
 
 
