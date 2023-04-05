@@ -1,41 +1,47 @@
+from datetime import datetime, timedelta
+
+
 import sqlalchemy as sq
 from sqlalchemy.orm import sessionmaker
 
-from models import delete_table, create_table, User, UserOffer, Photo, Interest, InterestUserOffer, Offer
+from Database.models import delete_table, create_table, User, UserOffer, Photo, Interest, InterestUserOffer, Offer
 
 SQLsystem = 'postgresql'
 login = 'postgres'
-password = '35Pc5zTH47A7'
+password = ''
 host = 'localhost'
 port = '5432'
-db_name = "vkinder_db"
+db_name = ""
 DSN = f'{SQLsystem}://{login}:{password}@{host}:{port}/{db_name}'
 engine = sq.create_engine(DSN)
 Session = sessionmaker(bind=engine)
 
-delete_table(engine)
-create_table(engine)
+
+def clear_population():
+    delete_table(engine)
+    create_table(engine)
 
 
-def add_user(user_id: int, first_name: str, last_name: str, sex: int, age: str, city: int):
+def add_user(user_id: int, first_name: str, last_name: str, sex: int, bdate: str, city: int, interest: str):
     """
         Function adds a user to the database.
     :param user_id: id user
     :param first_name: first name user
     :param last_name: last name user
     :param sex: gender user. 1 - female, 2 - male
-    :param age: age user
+    :param bdate: date of birth
     :param city: city user
+    :param interest: user's interests
     """
     with Session() as session:
         user_find = session.query(User.user_id).all()
         if user_id not in [user[0] for user in user_find]:
-            user = User(user_id=user_id, first_name=first_name, last_name=last_name, sex=sex, age=age, city=city)
+            user = User(user_id=user_id, first_name=first_name, last_name=last_name, sex=sex, bdate=bdate, city=city, interest=interest)
             session.add(user)
             session.commit()
 
 
-def add_offer(user_id: int, offer_id: int, first_name: str, last_name: str, sex: int, age: str, city: int):
+def add_offer(user_id: int, offer_id: int, first_name: str, last_name: str, sex: int, bdate: datetime.date, city: int, interest: str):
     """
         The function adds an offer to the database.
     :param user_id: id user
@@ -43,13 +49,13 @@ def add_offer(user_id: int, offer_id: int, first_name: str, last_name: str, sex:
     :param first_name: first name of offer
     :param last_name: last name of offer
     :param sex: gender offer. 1 - female, 2 - male
-    :param age: age offer
+    :param bdate: age birthdate
     :param city: city offer
     """
     with Session() as session:
         offer_find = session.query(Offer.offer_id).all()
         if offer_id not in [offer[0] for offer in offer_find]:
-            offer = Offer(offer_id=offer_id, first_name=first_name, last_name=last_name, sex=sex, age=age,
+            offer = Offer(offer_id=offer_id, first_name=first_name, last_name=last_name, sex=sex, bdate=bdate,
                           city=city)
             session.add(offer)
         user_offer_find = session.query(UserOffer.user_offer_id). \
@@ -101,39 +107,39 @@ def add_photo(offer_id, photo_url):
     """
     with Session() as session:
         for url in photo_url:
-            photo_find = session.query(Photo).filter(Photo.photo_id == url).all()
+            photo_find = session.query(Photo).filter(Photo.photo_url == url).all()
             if len(photo_find) == 0:
                 photo = Photo(photo_url=url, offer_id=offer_id)
                 session.add(photo)
             session.commit()
 
 
-def add_interest(interest: str, user_id=0, offer_id=0):
-    """
-        Function adds user interests or offers to the database
-    :param interest: name of user interest or offer
-    :param user_id: id user
-    :param offer_id: id offer
-    """
-    with Session() as session:
-        interest_find = session.query(Interest.interest).filter(Interest.interest == interest)
-        if interest not in [interest[0] for interest in interest_find]:
-            interest_add = Interest(interest="interest")
-            session.add(interest_add)
-        interest_id_find = session.query(Interest.interest_id).filter(Interest.interest == interest).all()[0][0]
-        user_find = session.query(InterestUserOffer.user_id). \
-            filter(InterestUserOffer.interest_id == interest_id_find). \
-            filter(InterestUserOffer.user_id == user_id).all()
-        offer_find = session.query(InterestUserOffer.offer_id). \
-            filter(InterestUserOffer.interest_id == interest_id_find). \
-            filter(InterestUserOffer.offer_id == offer_id).all()
-        if user_id != 0 and user_id not in [user[0] for user in user_find]:
-            interest_person_add = InterestUserOffer(user_id=user_id, interest_id=interest_id_find)
-            session.add(interest_person_add)
-        if offer_id != 0 and offer_id not in [offer[0] for offer in offer_find]:
-            interest_person_add = InterestUserOffer(offer_id=offer_id, interest_id=interest_id_find)
-            session.add(interest_person_add)
-        session.commit()
+# def add_interest(interest: str, user_id=0, offer_id=0):
+#     """
+#         Function adds user interests or offers to the database
+#     :param interest: name of user interest or offer
+#     :param user_id: id user
+#     :param offer_id: id offer
+#     """
+#     with Session() as session:
+#         interest_find = session.query(Interest.interest).filter(Interest.interest == interest)
+#         if interest not in [interest[0] for interest in interest_find]:
+#             interest_add = Interest(interest="interest")
+#             session.add(interest_add)
+#         interest_id_find = session.query(Interest.interest_id).filter(Interest.interest == interest).all()[0][0]
+#         user_find = session.query(InterestUserOffer.user_id). \
+#             filter(InterestUserOffer.interest_id == interest_id_find). \
+#             filter(InterestUserOffer.user_id == user_id).all()
+#         offer_find = session.query(InterestUserOffer.offer_id). \
+#             filter(InterestUserOffer.interest_id == interest_id_find). \
+#             filter(InterestUserOffer.offer_id == offer_id).all()
+#         if user_id != 0 and user_id not in [user[0] for user in user_find]:
+#             interest_person_add = InterestUserOffer(user_id=user_id, interest_id=interest_id_find)
+#             session.add(interest_person_add)
+#         if offer_id != 0 and offer_id not in [offer[0] for offer in offer_find]:
+#             interest_person_add = InterestUserOffer(offer_id=offer_id, interest_id=interest_id_find)
+#             session.add(interest_person_add)
+#         session.commit()
 
 
 def get_offer_info(user_id, offer):
@@ -170,30 +176,40 @@ def get_offer_info(user_id, offer):
     return offer_list
 
 
-def get_offer(user_id):
+def get_offers(criteria):
     """
-        Function provides information about all offers.
-    :param user_id: id user
-    :return: list containing list with details of offers
-            format list:
-            [[offer 1], [offer 2]...]
-            format offer:
-            [id user, 'first nam', 'last name', sex, age, 'city',
-            [list with url photo], [list with general user interests and offer]]
+    Function takes a structure produced by form_criteria func and
+    :returns a list of offers from DB that fit the criteria.
     """
+
+    today = datetime.utcnow()
+    birthdate_from = today - timedelta(days=365 * criteria['age_to'])
+    birthdate_to = today - timedelta(days=365 * criteria['age_from'])
+
     with Session() as session:
-        offer = session.query(Offer.offer_id,
-                              Offer.first_name,
-                              Offer.last_name,
-                              Offer.sex,
-                              Offer.age,
-                              Offer.city). \
-            join(UserOffer, UserOffer.offer_id == Offer.offer_id). \
-            join(User, User.user_id == UserOffer.user_id). \
-            filter(User.user_id == user_id). \
-            filter(UserOffer.black_list == 0). \
-            filter(UserOffer.favorite_list == 0).all()
-        result = get_offer_info(user_id, offer)
+        offers = session.query(Offer.offer_id,
+                               Offer.first_name,
+                               Offer.last_name,
+                               Offer.sex,
+                               Offer.bdate,
+                               Offer.city,
+                               Offer.interest).\
+            filter(Offer.city == criteria['city']). \
+            filter(Offer.sex == criteria['sex']). \
+            filter(Offer.bdate.between(birthdate_from, birthdate_to)).\
+            all()
+
+        result = []
+        for offer in offers:
+            photos = session.query(Photo.photo_url).filter(Photo.offer_id == offer[0]).all()
+            result.append({'id': offer[0],
+                           'first_name': offer[1],
+                           'last_name': offer[2],
+                           'sex': offer[3],
+                           'bdate': offer[4],
+                           'city': {'id': offer[5]},
+                           'interests': offer[6],
+                           'photos': [photo[0] for photo in photos]})
     return result
 
 

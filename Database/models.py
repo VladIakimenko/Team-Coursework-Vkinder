@@ -11,8 +11,9 @@ class User(Base):
     first_name = sq.Column(sq.String(length=40), nullable=False)
     last_name = sq.Column(sq.String(length=40), nullable=False)
     sex = sq.Column(sq.Integer, nullable=False)
-    age = sq.Column(sq.Date, nullable=False)
+    bdate = sq.Column(sq.String, nullable=False)
     city = sq.Column(sq.Integer, nullable=False)
+    interest = sq.Column(sq.String, nullable=True)
 
     user_offer = relationship('UserOffer', back_populates='user')
     interest_user_offer = relationship('InterestUserOffer', back_populates='user')
@@ -25,8 +26,9 @@ class Offer(Base):
     first_name = sq.Column(sq.String(length=40), nullable=False)
     last_name = sq.Column(sq.String(length=40), nullable=False)
     sex = sq.Column(sq.Integer, nullable=False)
-    age = sq.Column(sq.Date, nullable=False)
+    bdate = sq.Column(sq.Date, nullable=False)
     city = sq.Column(sq.Integer, nullable=False)
+    interest = sq.Column(sq.String, nullable=True)
 
     user_offer = relationship('UserOffer', back_populates='offer')
     photo = relationship('Photo', back_populates='offer')
