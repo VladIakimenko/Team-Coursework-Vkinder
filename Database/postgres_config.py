@@ -1,6 +1,6 @@
-SQLSYS = 'postgresql'
-LOGIN = 'postgres'
-PASSWORD = 'kay32463AC63jk6'
+SQLSYS = ''
+LOGIN = ''
+PASSWORD = ''
 HOST = 'localhost'
 PORT = '5432'
-DATABASE = "vkinder"
+DATABASE = ""
