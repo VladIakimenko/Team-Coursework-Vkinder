@@ -1,17 +1,18 @@
 from datetime import datetime, timedelta
 
-
 import sqlalchemy as sq
 from sqlalchemy.orm import sessionmaker
 
-from Database.models import delete_table, create_table, User, UserOffer, Photo, Interest, InterestUserOffer, Offer
+from Database.models import delete_table, create_table, User, UserOffer, Photo, Offer
+from Database.postgres_config import SQLSYS, LOGIN, PASSWORD, HOST, PORT, DATABASE
 
-SQLsystem = 'postgresql'
-login = 'postgres'
-password = ''
-host = 'localhost'
-port = '5432'
-db_name = ""
+SQLsystem = SQLSYS
+login = LOGIN
+password = PASSWORD
+host = HOST
+port = PORT
+db_name = DATABASE
+
 DSN = f'{SQLsystem}://{login}:{password}@{host}:{port}/{db_name}'
 engine = sq.create_engine(DSN)
 Session = sessionmaker(bind=engine)
@@ -43,13 +44,13 @@ def add_user(user_id: int, first_name: str, last_name: str, sex: int, bdate: str
 
 def add_offer(user_id: int, offer_id: int, first_name: str, last_name: str, sex: int, bdate: datetime.date, city: int, interest: str):
     """
-        The function adds an offer to the database.
+        Function adds an offer to the database.
     :param user_id: id user
     :param offer_id: id offer
     :param first_name: first name of offer
     :param last_name: last name of offer
     :param sex: gender offer. 1 - female, 2 - male
-    :param bdate: age birthdate
+    :param bdate: birthdate
     :param city: city offer
     """
     with Session() as session:
@@ -67,10 +68,28 @@ def add_offer(user_id: int, offer_id: int, first_name: str, last_name: str, sex:
         session.commit()
 
 
+def remove_records(offer_id):
+    """
+    Function removes the records from the Offer table by "offer_id".
+    Since cascade removal is adjusted, all relevant records from other tables are evenly removed.
+    """
+    with Session() as session:
+        session.query(Offer).filter(Offer.offer_id == offer_id).delete()
+        session.commit()
+
+
+def clear_favorites(user_id):
+    """
+    Function clears up the favorites list.
+    """
+    with Session() as session:
+        session.query(UserOffer).filter(UserOffer.user_id == user_id).delete()
+        session.commit()
+
+
 def add_black_list(user_id: int, offer_id: int):
     """
         Function adds an offer to the black list. Offer is permanently hidden from the search.
-    0 - offer is irrelevant, 1 - offer is excluded from the search
     :param user_id: id user
     :param offer_id: id offer
     """
@@ -86,7 +105,6 @@ def add_black_list(user_id: int, offer_id: int):
 def add_favorite_list(user_id: str, offer_id: str):
     """
         Function adds the offer to favorites if the user wants to save the offer.
-    0 - offer is irrelevant, 1 - offer is included in favorites
     :param user_id: id user
     :param offer_id: id offer
     """
@@ -114,72 +132,30 @@ def add_photo(offer_id, photo_url):
             session.commit()
 
 
-# def add_interest(interest: str, user_id=0, offer_id=0):
-#     """
-#         Function adds user interests or offers to the database
-#     :param interest: name of user interest or offer
-#     :param user_id: id user
-#     :param offer_id: id offer
-#     """
-#     with Session() as session:
-#         interest_find = session.query(Interest.interest).filter(Interest.interest == interest)
-#         if interest not in [interest[0] for interest in interest_find]:
-#             interest_add = Interest(interest="interest")
-#             session.add(interest_add)
-#         interest_id_find = session.query(Interest.interest_id).filter(Interest.interest == interest).all()[0][0]
-#         user_find = session.query(InterestUserOffer.user_id). \
-#             filter(InterestUserOffer.interest_id == interest_id_find). \
-#             filter(InterestUserOffer.user_id == user_id).all()
-#         offer_find = session.query(InterestUserOffer.offer_id). \
-#             filter(InterestUserOffer.interest_id == interest_id_find). \
-#             filter(InterestUserOffer.offer_id == offer_id).all()
-#         if user_id != 0 and user_id not in [user[0] for user in user_find]:
-#             interest_person_add = InterestUserOffer(user_id=user_id, interest_id=interest_id_find)
-#             session.add(interest_person_add)
-#         if offer_id != 0 and offer_id not in [offer[0] for offer in offer_find]:
-#             interest_person_add = InterestUserOffer(offer_id=offer_id, interest_id=interest_id_find)
-#             session.add(interest_person_add)
-#         session.commit()
-
-
-def get_offer_info(user_id, offer):
+def prepare_output(raw):
     """
-        Function provides information about offers.
-    :param user_id: id user
-    :param offer: object containing information about offers
-    :return: list containing lists with details of offers
-            format list:
-            [[offer 1], [offer 2], ...]
-            format offer:
-            [id offer, 'first name', 'last name', sex, age, 'city',
-            [list with url photo], [list with general user interests and offer]]
+    Reforms the return from get_offer function to resemble the vk api output.
+    Adds photos as a list to the collection.
     """
-    offer_list = []
+    result = []
     with Session() as session:
-        user_interests = session.query(Interest.interest). \
-            join(InterestUserOffer, InterestUserOffer.interest_id == Interest.interest_id). \
-            filter(InterestUserOffer.user_id == user_id).all()
-        for note in offer:
-            offer_list.append([])
-            for el in note:
-                offer_list[-1].append(el)
-            photo = session.query(Photo.id_photo).filter(Photo.offer_id == note[0]).all()
-            offer_list[-1].append([url[0] for url in photo])
-            offer_interests = session.query(Interest.interest). \
-                join(InterestUserOffer, InterestUserOffer.interest_id == Interest.interest_id). \
-                filter(InterestUserOffer.offer_id == note[0]).all()
-            interest_list = []
-            for interest in [inter_user[0] for inter_user in user_interests]:
-                if interest in [inter_offer[0] for inter_offer in offer_interests]:
-                    interest_list.append(interest)
-            offer_list[-1].append(interest_list)
-    return offer_list
+        for element in raw:
+            photos = session.query(Photo.photo_url).filter(Photo.offer_id == element[0]).all()
+            result.append({'id': element[0],
+                           'first_name': element[1],
+                           'last_name': element[2],
+                           'sex': element[3],
+                           'bdate': element[4],
+                           'city': {'id': element[5]},
+                           'interests': element[6],
+                           'photos': [photo[0] for photo in photos]})
+    return result
 
 
-def get_offers(criteria):
+def get_offer(criteria, user_id):
     """
-    Function takes a structure produced by form_criteria func and
-    :returns a list of offers from DB that fit the criteria.
+        Function takes a structure produced by the form_criteria func and
+    :returns: a list of offers that fit the criteria.
     """
 
     today = datetime.utcnow()
@@ -187,55 +163,45 @@ def get_offers(criteria):
     birthdate_to = today - timedelta(days=365 * criteria['age_from'])
 
     with Session() as session:
-        offers = session.query(Offer.offer_id,
-                               Offer.first_name,
-                               Offer.last_name,
-                               Offer.sex,
-                               Offer.bdate,
-                               Offer.city,
-                               Offer.interest).\
+        offer = session.query(Offer.offer_id,
+                              Offer.first_name,
+                              Offer.last_name,
+                              Offer.sex,
+                              Offer.bdate,
+                              Offer.city,
+                              Offer.interest).\
             filter(Offer.city == criteria['city']). \
             filter(Offer.sex == criteria['sex']). \
-            filter(Offer.bdate.between(birthdate_from, birthdate_to)).\
+            filter(Offer.bdate.between(birthdate_from, birthdate_to)). \
+            join(UserOffer, UserOffer.offer_id == Offer.offer_id). \
+            join(User, User.user_id == UserOffer.user_id). \
+            filter(User.user_id == user_id). \
+            filter(UserOffer.black_list == 0). \
+            filter(UserOffer.favorite_list == 0). \
             all()
+        result = prepare_output(offer)
 
-        result = []
-        for offer in offers:
-            photos = session.query(Photo.photo_url).filter(Photo.offer_id == offer[0]).all()
-            result.append({'id': offer[0],
-                           'first_name': offer[1],
-                           'last_name': offer[2],
-                           'sex': offer[3],
-                           'bdate': offer[4],
-                           'city': {'id': offer[5]},
-                           'interests': offer[6],
-                           'photos': [photo[0] for photo in photos]})
     return result
 
 
 def get_favorite(user_id):
     """
-            Function provides information about featured offers.
-    :param user_id: id user
-    :return: list containing list with details of offers.
-            Формат листа:
-            [[offer 1], [offer 2]...]
-            format offer:
-            [id user, 'first nam', 'last name', sex, age, 'city',
-            [list with url photo], [list with general user interests and offer]]
+        Function provides information about featured offers.
+    :returns: a list of offers from DB that have been saved to favorites
     """
     with Session() as session:
         offer = session.query(Offer.offer_id,
                               Offer.first_name,
                               Offer.last_name,
                               Offer.sex,
-                              Offer.age,
-                              Offer.city). \
+                              Offer.bdate,
+                              Offer.city,
+                              Offer.interest).\
             join(UserOffer, UserOffer.offer_id == Offer.offer_id). \
             join(User, User.user_id == UserOffer.user_id). \
             filter(User.user_id == user_id). \
             filter(UserOffer.favorite_list == 1).all()
-        result = get_offer_info(user_id, offer)
+        result = prepare_output(offer)
     return result
 
 
