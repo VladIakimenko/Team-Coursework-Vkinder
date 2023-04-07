@@ -23,6 +23,7 @@ def listen():
         if event:
             if event[0] not in dialogues:
                 dialogues[event[0]] = threading.Event()
+                processed[event[0]] = threading.Event()
             event_thread = threading.Thread(target=handle_event,
                                             args=(event,))
             event_thread.start()
@@ -104,6 +105,18 @@ def handle_event(event):
               f'Incoming message from user {sender_id}:\n'
               f'Message text:\n"{text}"')
 
+        if last_offers.get(sender_id):
+            print(f'\n{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} '
+                  f'Dialogue with user {sender_id} already in progress.\n')
+            bot.say(sender_id, 'Пожалуйста, используйте кнопки.')
+            return
+        elif processed[sender_id].is_set():
+            print(f'\n{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} '
+                  f'Suggestion for user {sender_id} is already being prepared.\n')
+            bot.say(sender_id, 'Пожалуйста, подождите, обрабатываю Ваш запрос.')
+            return
+
+        processed[sender_id].set()
         details = bot.get_users_details(sender_id)
         print(f'\n{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} '
               f'User data received:\n{details}')
@@ -282,6 +295,7 @@ def suggest(offers_queue, user_id):
 
         del(dialogues[user_id])
         del(last_offers[user_id])
+        del(processed[user_id])
         print(f'\n{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} '
               f'Dialogue with {user_id} closed.')
         break
@@ -293,8 +307,9 @@ if __name__ == '__main__':
     accounts = []
     dialogues = {}
     last_offers = {}
+    processed = {}
 
-    # connect.clear_population()                                 # MAKE SURE TO REMOVE THIS LINE WHEN PUSHING TO PROD
+    connect.clear_population()                                 # MAKE SURE TO REMOVE THIS LINE WHEN PUSHING TO PROD
     log_file = open(LOG_FILE, 'at', encoding='UTF-8')
     sys.stderr = log_file
     sys.stdout = log_file

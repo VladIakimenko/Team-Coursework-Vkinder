@@ -4,10 +4,10 @@ import sqlalchemy as sq
 from sqlalchemy.orm import sessionmaker
 
 from Database.models import delete_table, create_table, User, UserOffer, Photo, Offer
-from Database.postgres_config import SQLSYS, LOGIN, PASSWORD, HOST, PORT, DATABASE
+from Database.postgres_config import SQLSYS, USER, PASSWORD, HOST, PORT, DATABASE
 
 SQLsystem = SQLSYS
-login = LOGIN
+login = USER
 password = PASSWORD
 host = HOST
 port = PORT
