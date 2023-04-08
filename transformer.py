@@ -38,16 +38,15 @@ def form_criteria(user):
         except ValueError:
             return None
 
-    if user.get('bdate'):
-        max_delta = 8
-        min_age = 18
-        user_age = age_from_bdate(user['bdate'])
-        if user_age:
-            criteria['age_to'] = user_age + max_delta
-            criteria['age_from'] = max(user_age - max_delta, min_age)
-        else:
-            criteria['age_from'] = min_age
-            criteria['age_to'] = 99
+    max_delta = 8
+    min_age = 18
+    user_age = age_from_bdate(user.get('bdate', ''))
+    if user_age:
+        criteria['age_to'] = user_age + max_delta
+        criteria['age_from'] = max(user_age - max_delta, min_age)
+    else:
+        criteria['age_from'] = min_age
+        criteria['age_to'] = 99
 
     if user.get('interests'):
         criteria['interests'] = sort_interests(user['interests'])
