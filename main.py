@@ -128,7 +128,7 @@ def handle_event(event):
                          details['last_name'],
                          details['sex'],
                          details.get('bdate'),
-                         details.get('city', {}).get('id', ''),
+                         details.get('city', {}).get('id', 1),
                          details.get('interests'))
 
         search_params = form_criteria(details)
