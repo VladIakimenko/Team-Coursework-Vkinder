@@ -8,8 +8,6 @@ from bot import Bot, Searcher
 from transformer import form_criteria, filter_by_interests
 from Database import connect
 
-LOG_FILE = 'log.txt'
-
 
 def listen():
     """
