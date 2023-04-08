@@ -183,7 +183,9 @@ def get_accounts_from_api(search_params, sender_id, offers_queue):
 
             offer_id = account['id']
             raw = searcher.get_photos_and_details(offer_id, )
-
+            if isinstance(raw, Exception):
+                print(raw)
+                return counter
             try:
                 raw = sum(raw, [])
             except TypeError:
@@ -233,6 +235,10 @@ def get_accounts_from_api(search_params, sender_id, offers_queue):
         return counter
 
     api_search_result = searcher.search_users(search_params)
+    if isinstance(api_search_result, Exception):
+        print(api_search_result)
+        bot.say(sender_id, 'На сегодня я израсходовал лимиты поиска, возвращайтесь завтра!')
+        return
     print(f'\n{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} '
           f'\nTotal found {len(api_search_result)}')
     suggest_thread = threading.Thread(target=suggest,
