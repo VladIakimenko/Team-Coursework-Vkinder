@@ -140,9 +140,9 @@ def get_accounts_from_api(search_params, sender_id, offers_queue):
             offer_id = account['id']
             raw = searcher.get_photos_and_details(offer_id, )
 
-            if raw:
+            try:
                 raw = sum(raw, [])
-            else:
+            except TypeError:
                 continue
                 
 
