@@ -146,8 +146,11 @@ class Searcher(Bot):
         """
         with open(self.scripts_path + 'get_photos_and_details') as f:
             code = f.read().replace('<id>', str(account))
-        response = self.vk.execute(code=code)
-        return response
+        try:
+            response = self.vk.execute(code=code)
+            return response
+        except vk_api.exceptions.ApiError as e:
+            return e
 
     def search_users(self, criteria):
         """
@@ -164,8 +167,11 @@ class Searcher(Bot):
                            .replace('<sex>', str(criteria['sex']))\
                            .replace('<age_from>', str(criteria['age_from']))\
                            .replace('<age_to>', str(criteria['age_to']))
-        response = self.vk.execute(code=code)
-        return response[0]['items'] if response else None
+        try:
+            response = self.vk.execute(code=code)
+            return response[0]['items'] if response else None
+        except vk_api.exceptions.ApiError as e:
+            return e
 
 
 
