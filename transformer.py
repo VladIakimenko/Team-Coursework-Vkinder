@@ -25,8 +25,7 @@ def form_criteria(user):
     """
     criteria = {}
 
-    if user.get('city'):
-        criteria['city'] = user.get('city', {}).get('id', '')
+    criteria['city'] = user.get('city', {}).get('id', 1)
 
     if user.get('sex'):
         criteria['sex'] = (1, 2)[user['sex'] == 1]
