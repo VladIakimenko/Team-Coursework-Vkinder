@@ -140,10 +140,11 @@ def get_accounts_from_api(search_params, sender_id, offers_queue):
             offer_id = account['id']
             raw = searcher.get_photos_and_details(offer_id, )
 
-            if not raw:
-                continue
-            else:
+            if raw:
                 raw = sum(raw, [])
+            else:
+                continue
+                
 
             photos = {photo['sizes'][-1]['url']: photo['likes']['count'] for photo in raw}
             photos = [pair[0] for pair in sorted(photos.items(), key=lambda x: x[1])][:3]
