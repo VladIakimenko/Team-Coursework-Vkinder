@@ -30,7 +30,7 @@ To get started you need:
 3. Set up your PC or server to work with PostgreSQL
 4. Edit the "postgres_config.py" in the "Database" package to provide the DB connection details.  
   
-Kindly note, that the application does not crate the database itself, so before starting the app use "createdb" command in terminal.
+Kindly note, that the application does not create the database itself, so before starting the app use "createdb" command in terminal.
 
 ## Requirements
 The program has the following dependencies:
@@ -50,6 +50,7 @@ and suggests them to the user in a form of a message including:
 - name
 - link to account
 - 3 most pupular (by likes) photos  
+  
 If there are no matching accounts saved in the database the app requests vk.com api to search relevant accounts online. Once found, the program checks
 if the account has at least 3 photographs, and if so, both proposes the match to the user and saves the account to databse.  
 
