@@ -11,7 +11,7 @@ class User(Base):
     first_name = sq.Column(sq.String(length=40), nullable=False)
     last_name = sq.Column(sq.String(length=40), nullable=False)
     sex = sq.Column(sq.Integer, nullable=False)
-    bdate = sq.Column(sq.String, nullable=False)
+    bdate = sq.Column(sq.String, nullable=True)
     city = sq.Column(sq.Integer, nullable=False)
     interest = sq.Column(sq.String, nullable=True)
 
