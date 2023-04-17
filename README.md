@@ -3,7 +3,7 @@
 To run the app:
 - Install docker and docker-compose (as per requirements for your OS)
 - Run in the terminal in the root directory of the project: 'docker-compose up'
-- create a .env in the root folder with the following constants:
+- create a .env in the root folder with the following constants:  
     POSTGRES_DB=  
     POSTGRES_USER=  
     POSTGRES_PASSWORD=  
