@@ -4,16 +4,16 @@
 Перед запуском необходимо:
     создать и расположить env.txt в корне
     
-GROUP_ID=
-GROUP_TOKEN=
-USER_TOKEN=
-
-SQLSYS=postgresql
-USER=
-PASSWORD=
-HOST=localhost
-PORT=5432
-DATABASE=
+GROUP_ID=  
+GROUP_TOKEN=  
+USER_TOKEN=  
+  
+SQLSYS=postgresql  
+USER=  
+PASSWORD=  
+HOST=localhost  
+PORT=5432  
+DATABASE=  
 
     установить и настроить postgres
     создать пустую базу данных вручную при помощи скрипта createdb (или иным способом)
